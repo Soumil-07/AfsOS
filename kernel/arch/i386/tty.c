@@ -60,6 +60,7 @@ void terminal_putchar(char c) {
       case '\n':
         terminal_row++;
         terminal_column = 0;
+        terminal_update_csr();
         break;
 
       default:

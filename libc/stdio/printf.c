@@ -78,3 +78,4 @@ int printf(const char* restrict format, ...) {
 	va_end(parameters);
 	return written;
 }
+

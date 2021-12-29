@@ -12,19 +12,18 @@
 .long FLAGS
 .long CHECKSUM
 
-# Reserve a stack for the initial thread.
-.section .bss
-.align 16
-stack_bottom:
-.skip 16384 # 16 KiB
-stack_top:
 
 # The kernel entry point.
 .section .text
 .global _start
 .type _start, @function
 _start:
-	movl $stack_top, %esp
+       movl $stack_top, %esp
+
+       pushl $0
+       pushl %eax 
+       pushl $0
+       pushl %ebx
 
 	# Call the global constructors.
 	call _init
@@ -94,7 +93,7 @@ idt_load:
 #  0: Divide By Zero Exception
 isr0:
     cli
-    push $0
+   push $0
     push $0
     jmp isr_common_stub
 
@@ -313,25 +312,175 @@ isr31:
 
 # Save processor state, set up kernel mode segments, call C fault handler and restore stack frame
 isr_common_stub:
+   pusha
+   push %ds
+   push %es
+   push %fs
+   push %gs
+   mov $0x10, %ax   # Load the Kernel Data Segment descriptor!
+   mov %ax, %ds
+   mov %ax, %es
+   mov %ax, %fs
+   mov %ax, %gs
+   mov %esp, %eax   # Push us the stack
+   push %eax
+   call fault_handler
+   pop %eax
+   mov %eax, %esp
+   pop %gs
+   pop %fs
+   pop %es
+   pop %ds
+   popa
+   add $8, %esp     # Cleans up the pushed error code and pushed ISR number
+   iret           # pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP! 
+
+# Interrupt Requests
+.global irq0
+.global irq1
+.global irq2
+.global irq3
+.global irq4
+.global irq5
+.global irq6
+.global irq7
+.global irq8
+.global irq9
+.global irq10
+.global irq11
+.global irq12
+.global irq13
+.global irq14
+.global irq15
+
+# Start IRQs from IDT entry 32
+irq0:
+   cli
+   push $0
+   push $32
+   jmp irq_common_stub
+
+irq1:
+   cli
+   push $0
+   push $33
+   jmp irq_common_stub
+
+irq2:
+   cli
+   push $0
+   push $34
+   jmp irq_common_stub
+
+irq3:
+   cli
+   push $0
+   push $33
+   jmp irq_common_stub
+
+irq4:
+   cli
+   push $0
+   push $34
+   jmp irq_common_stub
+
+irq5:
+   cli
+   push $0
+   push $35
+   jmp irq_common_stub
+
+irq6:
+   cli
+   push $0
+   push $36
+   jmp irq_common_stub
+
+irq7:
+   cli
+   push $0
+   push $37
+   jmp irq_common_stub
+
+irq8:
+   cli
+   push $0
+   push $38
+   jmp irq_common_stub
+
+irq9:
+   cli
+   push $0
+   push $39
+   jmp irq_common_stub
+
+irq10:
+   cli
+   push $0
+   push $40
+   jmp irq_common_stub
+
+irq11:
+   cli
+   push $0
+   push $41
+   jmp irq_common_stub
+
+irq12:
+   cli
+   push $0
+   push $42
+   jmp irq_common_stub
+
+irq13:
+   cli
+   push $0
+   push $43
+   jmp irq_common_stub
+
+irq14:
+   cli
+   push $0
+   push $44
+   jmp irq_common_stub
+
+irq15:
+   cli
+   push $0
+   push $45
+   jmp irq_common_stub
+
+.extern irq_handler
+
+irq_common_stub:
     pusha
     push %ds
     push %es
     push %fs
     push %gs
-    mov $0x10, %ax   # Load the Kernel Data Segment descriptor!
+    mov $0x10, %ax
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %fs
     mov %ax, %gs
-    mov %esp, %eax   # Push us the stack
+    mov %esp, %eax
     push %eax
-    mov fault_handler, %eax
-    call %eax       # A special call, preserves the 'eip' register
+
+    call irq_handler
+
     pop %eax
+    mov %eax, %esp
     pop %gs
     pop %fs
     pop %es
     pop %ds
     popa
-    add $8, %esp     # Cleans up the pushed error code and pushed ISR number
-    iret           # pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP!
+    add $8, %esp
+    iret
+
+# Reserve a stack for the initial thread.
+.section .bss
+.align 16
+stack_bottom:
+.skip 16384 # 16 KiB
+stack_top:
