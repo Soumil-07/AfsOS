@@ -1,6 +1,7 @@
 #include <kernel/system.h>
 #include <kernel/idt.h>
 #include <stdio.h>
+#include <stdint.h>
 
 /* These are function prototypes for all of the exception
 *  handlers: The first 32 entries in the IDT are reserved
@@ -121,6 +122,23 @@ char *exception_messages[] =
 
 void fault_handler(struct regs* r)
 {
+    /* page fault */
+    if (r->int_no == 0xE)
+    {
+        /* the faulting address is stored in CR2 */
+        uint32_t faulting_address;
+        __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
+
+        int present = !(r->err_code & 0x1);
+        int rw = r->err_code & 0x2;
+        int us = r->err_code & 0x4;
+        int reserved = r->err_code & 0x8;
+        int id = r->err_code & 0x10;
+
+        printf("Page fault (P=%d RW=%d US=%d R=%d ID=%d ADDR=%X)\n", present, rw, us, reserved, id, faulting_address);
+        return;
+    }
+
     if (r->int_no < 32)
     {
         puts(exception_messages[r->int_no]);

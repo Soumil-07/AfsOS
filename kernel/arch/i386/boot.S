@@ -478,6 +478,17 @@ irq_common_stub:
     add $8, %esp
     iret
 
+.global pd_install
+.type pd_install, @function
+pd_install:
+   mov page_directory, %eax
+   mov %eax, %cr3
+
+   mov %cr0, %eax
+   or $0x80000001, %eax
+   mov %eax, %cr0
+
+
 # Reserve a stack for the initial thread.
 .section .bss
 .align 16
